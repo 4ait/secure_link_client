@@ -8,7 +8,7 @@ use tokio::net::TcpStream;
 use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 use tokio_rustls::rustls::pki_types::{CertificateDer, ServerName};
 use tokio_rustls::{TlsConnector, TlsStream};
-use x509_parser::pem::{parse_x509_pem, Pem};
+use x509_parser::pem::{Pem};
 
 async fn load_dev_cert(cert_path: &str) -> Result<Vec<CertificateDer>, Box<dyn std::error::Error>> {
    
