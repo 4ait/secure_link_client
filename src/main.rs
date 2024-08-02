@@ -1,17 +1,20 @@
-use std::net::{SocketAddr, ToSocketAddrs};
+mod pdu;
+mod global_channel;
+mod proxy_channel;
+mod tls_connect;
+
+use std::net::{ToSocketAddrs};
 use std::sync::Arc;
 use dotenv::dotenv;
-use log::info;
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt};
-use tokio::net::TcpStream;
 use tokio_rustls::rustls::{ClientConfig, RootCertStore};
-use tokio_rustls::rustls::pki_types::{CertificateDer, ServerName};
-use tokio_rustls::{TlsConnector, TlsStream};
+use tokio_rustls::rustls::pki_types::{CertificateDer};
 use x509_parser::pem::{Pem};
 use x509_parser::x509::X509Version;
+use crate::global_channel::GlobalChannel;
 
-async fn load_dev_cert(cert_path: &str) -> Result<Vec<CertificateDer>, Box<dyn std::error::Error>> {
+async fn load_dev_cert(cert_path: &str) -> Result<Vec<CertificateDer>, anyhow::Error> {
 
     let mut cert_file = File::open(cert_path).await?;
     let mut data = Vec::new();
@@ -33,45 +36,13 @@ async fn load_dev_cert(cert_path: &str) -> Result<Vec<CertificateDer>, Box<dyn s
     Ok(der_certs)
 }
 
-async fn connect_to_domain(config: Arc<ClientConfig>, socket_addr: SocketAddr, domain: String) -> Result<TlsStream<TcpStream>, Box<dyn std::error::Error>> {
-    let connector = TlsConnector::from(config);
-    let server_name = ServerName::try_from(domain)?;
 
-    // Create a TCP connection
-    let tcp_stream = TcpStream::connect(&socket_addr).await?;
-    info!("Connected to the server via TCP");
-
-    // Establish a TLS connection
-    let tls_stream = connector.connect(server_name, tcp_stream).await?;
-    info!("TLS connection established");
-
-    Ok(tls_stream.into())
-}
-
-async fn connect_to_address(config: Arc<ClientConfig>, socket_addr: SocketAddr) -> Result<TlsStream<TcpStream>, Box<dyn std::error::Error>> {
-    let connector = TlsConnector::from(config);
-
-    let server_name = ServerName::IpAddress(socket_addr.ip().into());
-
-    // Create a TCP connection
-    let tcp_stream = TcpStream::connect(&socket_addr).await?;
-    info!("Connected to the server via TCP");
-
-    // Establish a TLS connection
-    let tls_stream = connector.connect(server_name, tcp_stream).await?;
-    info!("TLS connection established");
-
-    Ok(tls_stream.into())
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
     env_logger::init();
-
-    let addr = "127.0.0.1:6001";
-    let socket_addr = addr.to_socket_addrs()?.next().ok_or("Unable to resolve domain")?;
-
+    
     // Load system root certificates
     let mut root_cert_store = RootCertStore::empty();
     let root_certs = rustls_native_certs::load_native_certs()
@@ -93,13 +64,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_root_certificates(root_cert_store)
         .with_no_client_auth();
 
-    let config = Arc::new(config);
+    let tls_config = Arc::new(config);
+    
+    let addr = "127.0.0.1:6001";
+    let socket_addr = addr.to_socket_addrs()?.next().ok_or("Unable to resolve domain")?;
+    let domain = "127.0.0.1".to_string();
+    
+    let auth_token = "abc".to_string();
 
-    let mut connection = connect_to_domain(config, socket_addr, "127.0.0.1".into()).await.unwrap();
-
-    let mut buff = [0; 1];
-
-    connection.read_exact(&mut buff).await.unwrap();
-
+    let global_channel = GlobalChannel::create_global_channel(socket_addr, domain, tls_config, auth_token).await?;
+    
+    global_channel.run_message_loop().await?;
+    
     Ok(())
 }
