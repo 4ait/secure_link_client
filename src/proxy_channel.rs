@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
+use anyhow::anyhow;
 use rustls::ClientConfig;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -20,7 +21,8 @@ impl ProxyChannel {
                                       secure_link_server_domain: String,
                                       tls_config: Arc<ClientConfig>, 
                                       sender_tcp_stream: TcpStream, 
-                                      proxy_channel_token: String
+                                      secure_link_connection_id: String,
+                                      proxy_channel_token: String,
     ) -> Result<ProxyChannel, anyhow::Error> {
 
 
@@ -33,7 +35,7 @@ impl ProxyChannel {
             .await
             .unwrap();
         
-        let proxy_channel_join_request = ProxyChannelJoinRequest::new(proxy_channel_token);
+        let proxy_channel_join_request = ProxyChannelJoinRequest::new(secure_link_connection_id, proxy_channel_token);
 
         let request_json = serde_json::to_string(&proxy_channel_join_request).unwrap();
 
@@ -53,15 +55,27 @@ impl ProxyChannel {
 
         tls_stream.read_exact(&mut message).await?;
 
-        let _channel_join_response = serde_json::from_slice::<ProxyChannelJoinResponse>(&message)?;
+        let channel_join_response = serde_json::from_slice::<ProxyChannelJoinResponse>(&message)?;
+        
+        match channel_join_response {
+            ProxyChannelJoinResponse::ProxyChannelJoinConfirmed(_) => {
+                
+                let proxy_channel =
+                    ProxyChannel {
+                        recipient_tls_stream: tls_stream,
+                        sender_tcp_stream
+                    };
 
-        let proxy_channel = 
-            ProxyChannel { 
-                recipient_tls_stream: tls_stream,
-                sender_tcp_stream 
-            };
+                Ok(proxy_channel)
+                
+            }
+            ProxyChannelJoinResponse::ProxyChannelJoinDenied(_) => {
+                
+                Err(anyhow!("ProxyChannelJoinDenied"))
+                
+            }
+        }
 
-        Ok(proxy_channel)
     }
     
     pub async fn run_proxy(self) -> Result<(), anyhow::Error> {

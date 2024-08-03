@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
 pub enum GlobalChannelMessage {
     #[serde(rename = "proxy_channel_open_request")]
     ProxyChannelOpenRequest(ProxyChannelOpenRequest)

@@ -2,11 +2,11 @@ use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 use std::sync::Arc;
 use anyhow::anyhow;
+use log::info;
 use rustls::ClientConfig;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio_rustls::TlsStream;
-use x509_parser::nom::AsBytes;
 use crate::pdu::global_channel_join_request::GlobalChannelJoinRequest;
 use crate::pdu::global_channel_join_response::GlobalChannelJoinResponse;
 use crate::pdu::global_channel_message::GlobalChannelMessage;
@@ -88,6 +88,7 @@ impl GlobalChannel {
         let secure_link_server_socket_addr = self.secure_link_server_socket_addr;
         let secure_link_server_domain = self.secure_link_server_domain;
         let tls_config = self.tls_config;
+        let connection_id = self.connection_id;
 
         loop {
 
@@ -101,6 +102,8 @@ impl GlobalChannel {
             let global_channel_message =
                 serde_json::from_slice::<GlobalChannelMessage>(&global_channel_message_bytes)?;
 
+            info!("Global channel message received: #{:#?}", global_channel_message);
+            
             match global_channel_message  {
                 GlobalChannelMessage::ProxyChannelOpenRequest(proxy_channel_open_request) => {
 
@@ -117,6 +120,7 @@ impl GlobalChannel {
                     let secure_link_server_socket_addr = secure_link_server_socket_addr.clone();
                     let secure_link_server_domain = secure_link_server_domain.clone();
                     let tls_config = tls_config.clone();
+                    let connection_id = connection_id.clone();
                     
                     tokio::spawn(async move {
                         
@@ -128,6 +132,7 @@ impl GlobalChannel {
                                 secure_link_server_domain,
                                 tls_config,
                                 tcp_stream,
+                                connection_id,
                                 proxy_channel_open_request.channel_token
                             ).await.unwrap();
                         
