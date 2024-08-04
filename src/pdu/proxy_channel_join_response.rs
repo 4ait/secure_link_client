@@ -13,7 +13,8 @@ pub enum ProxyChannelJoinResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ProxyChannelJoinConfirmed {}
-
+pub struct ProxyChannelJoinConfirmed {
+    proxy_channel_id: String
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProxyChannelJoinDenied{}
