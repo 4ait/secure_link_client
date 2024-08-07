@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         // Load the development certificate
         let dev_cert_path = "dev_certs/localhost.crt";
-        let dev_certs = crate::dev_cert_loader::DevCertLoader::load_dev_cert(dev_cert_path).await?;
+        let dev_certs = dev_cert_loader::DevCertLoader::load_dev_cert(dev_cert_path).await?;
 
         for dev_cert in dev_certs {
             root_cert_store.add(dev_cert).unwrap();
