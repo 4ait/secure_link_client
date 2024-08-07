@@ -55,7 +55,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // The domain or IP part
     let domain = parts[0].to_string();
     
-    let socket_addr = secure_link_server_address.to_socket_addrs()?.next().ok_or("Unable to resolve domain")?;
+    let socket_addr = 
+        secure_link_server_address
+            .to_socket_addrs()?
+            .next()
+            .ok_or("Unable to resolve domain")?;
+    
     
     let global_channel =
         GlobalChannel::create_global_channel(
