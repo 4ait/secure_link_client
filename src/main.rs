@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let socket_addr = addr.to_socket_addrs()?.next().ok_or("Unable to resolve domain")?;
     let domain = "127.0.0.1".to_string();
     
-    let auth_token = "abc".to_string();
+    let auth_token = "5:aczvR7_qsPTFpbrZ_UAKFOeQZrUIz7nArA-m8EoJLh0".to_string();
 
     let global_channel = GlobalChannel::create_global_channel(socket_addr, domain, tls_config, auth_token).await?;
     

@@ -25,7 +25,8 @@ impl ProxyChannel {
                                       proxy_channel_token: String,
     ) -> Result<ProxyChannel, anyhow::Error> {
 
-
+        
+        
         let mut tls_stream =
             connect_to_domain(
                 tls_config.clone(),
@@ -34,6 +35,7 @@ impl ProxyChannel {
             )
             .await
             .unwrap();
+        
         
         let proxy_channel_join_request = ProxyChannelJoinRequest::new(secure_link_connection_id, proxy_channel_token);
 

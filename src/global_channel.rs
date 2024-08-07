@@ -103,7 +103,7 @@ impl GlobalChannel {
                 serde_json::from_slice::<GlobalChannelMessage>(&global_channel_message_bytes)?;
 
             info!("Global channel message received: #{:#?}", global_channel_message);
-            
+
             match global_channel_message  {
                 GlobalChannelMessage::ProxyChannelOpenRequest(proxy_channel_open_request) => {
 
@@ -121,11 +121,11 @@ impl GlobalChannel {
                     let secure_link_server_domain = secure_link_server_domain.clone();
                     let tls_config = tls_config.clone();
                     let connection_id = connection_id.clone();
-                    
+
                     tokio::spawn(async move {
                         
                         let tcp_stream = TcpStream::connect(&destination_socket_addr).await.unwrap();
-                        
+
                         let proxy_channel = 
                             ProxyChannel::create_proxy_channel(
                                 secure_link_server_socket_addr,
@@ -137,6 +137,8 @@ impl GlobalChannel {
                             ).await.unwrap();
                         
                         proxy_channel.run_proxy().await.unwrap();
+                        
+                        info!("proxy channel down")
                         
                     });
 
