@@ -24,7 +24,7 @@ pub struct GlobalChannel {
 impl GlobalChannel {
 
     pub async fn create_global_channel(secure_link_server_socket_addr: SocketAddr, secure_link_server_domain: String, tls_config: Arc<ClientConfig>, auth_token: String) -> Result<GlobalChannel, anyhow::Error> {
-        
+
         let mut tls_stream = 
             connect_to_domain(
                 tls_config.clone(), 
@@ -123,7 +123,7 @@ impl GlobalChannel {
                     let connection_id = connection_id.clone();
 
                     tokio::spawn(async move {
-                        
+
                         let tcp_stream = TcpStream::connect(&destination_socket_addr).await.unwrap();
 
                         let proxy_channel = 
@@ -137,7 +137,7 @@ impl GlobalChannel {
                             ).await.unwrap();
                         
                         proxy_channel.run_proxy().await.unwrap();
-                        
+
                         info!("proxy channel down")
                         
                     });

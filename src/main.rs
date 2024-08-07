@@ -6,6 +6,7 @@ mod tls_connect;
 #[cfg(feature = "load_dev_certs")]
 mod dev_cert_loader;
 
+use std::env;
 use std::net::{ToSocketAddrs};
 use std::sync::Arc;
 use dotenv::dotenv;
@@ -16,6 +17,12 @@ use crate::global_channel::GlobalChannel;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
     env_logger::init();
+
+    let auth_token = env::var("AUTH_TOKEN")
+        .expect("AUTH_TOKEN environment variable not set");
+
+    let secure_link_server_address = env::var("SECURE_LINK_SERVER_ADDRESS")
+        .expect("SECURE_LINK_SERVER_ADDRESS environment variable not set");
     
     // Load system root certificates
     let mut root_cert_store = RootCertStore::empty();
@@ -36,7 +43,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             root_cert_store.add(dev_cert).unwrap();
         }
     }
-   
 
     let config = ClientConfig::builder()
         .with_root_certificates(root_cert_store)
@@ -44,12 +50,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let tls_config = Arc::new(config);
     
-    let addr = "127.0.0.1:6001";
-    let socket_addr = addr.to_socket_addrs()?.next().ok_or("Unable to resolve domain")?;
-    let domain = "127.0.0.1".to_string();
+    let parts: Vec<&str> = secure_link_server_address.split(':').collect();
     
-    let auth_token = "5:aczvR7_qsPTFpbrZ_UAKFOeQZrUIz7nArA-m8EoJLh0".to_string();
-
+    // The domain or IP part
+    let domain = parts[0].to_string();
+    
+    let socket_addr = secure_link_server_address.to_socket_addrs()?.next().ok_or("Unable to resolve domain")?;
+    
     let global_channel =
         GlobalChannel::create_global_channel(
             socket_addr,

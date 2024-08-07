@@ -7,6 +7,7 @@ use tokio::net::TcpStream;
 use tokio_rustls::{TlsConnector, TlsStream};
 
 pub async fn connect_to_domain(config: Arc<ClientConfig>, socket_addr: SocketAddr, domain: String) -> Result<TlsStream<TcpStream>, anyhow::Error> {
+    
     let connector = TlsConnector::from(config);
     let server_name = ServerName::try_from(domain)?;
 
