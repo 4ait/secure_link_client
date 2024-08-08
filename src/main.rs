@@ -28,15 +28,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("SECURE_LINK_SERVER_PORT environment variable not set")
         .parse()
         .expect("SECURE_LINK_SERVER_PORT must be a number");
-    
-    // Load system root certificates
-    let mut root_cert_store = RootCertStore::empty();
-    let root_certs = rustls_native_certs::load_native_certs()
-        .expect("Could not load platform dev_certs");
 
-    for cert in root_certs {
-        root_cert_store.add(cert).unwrap();
-    }
+
+    let mut root_cert_store = RootCertStore::empty();
+    root_cert_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
     
     #[cfg(feature = "load_dev_certs")]
     {
