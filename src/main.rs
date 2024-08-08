@@ -21,8 +21,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let auth_token = env::var("AUTH_TOKEN")
         .expect("AUTH_TOKEN environment variable not set");
 
-    let secure_link_server_address = env::var("SECURE_LINK_SERVER_ADDRESS")
-        .expect("SECURE_LINK_SERVER_ADDRESS environment variable not set");
+    let secure_link_server_host = env::var("SECURE_LINK_SERVER_HOST")
+        .expect("SECURE_LINK_SERVER_HOST environment variable not set");
+
+    let secure_link_server_port: u16 = env::var("SECURE_LINK_SERVER_PORT")
+        .expect("SECURE_LINK_SERVER_PORT environment variable not set")
+        .parse()
+        .expect("SECURE_LINK_SERVER_PORT must be a number");
     
     // Load system root certificates
     let mut root_cert_store = RootCertStore::empty();
@@ -50,13 +55,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let tls_config = Arc::new(config);
     
-    let parts: Vec<&str> = secure_link_server_address.split(':').collect();
-    
-    // The domain or IP part
-    let domain = parts[0].to_string();
-    
-    let socket_addr = 
-        secure_link_server_address
+    let socket_addr =
+        (secure_link_server_host.clone(), secure_link_server_port)
             .to_socket_addrs()?
             .next()
             .ok_or("Unable to resolve domain")?;
@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let global_channel =
         GlobalChannel::create_global_channel(
             socket_addr,
-            domain,
+            secure_link_server_host,
             tls_config,
             auth_token
         ).await?;
