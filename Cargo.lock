@@ -1050,6 +1050,7 @@ name = "secure_link"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "aws-lc-sys",
  "dotenv",
  "env_logger",
  "futures",

@@ -5,6 +5,7 @@ edition = "2021"
 
 [features]
 load_dev_certs = []
+aws-lc-sys = ["aws-lc-sys/bindgen"]
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
@@ -16,6 +17,7 @@ env_logger = "0.11.4"
 dotenv = "0.15.0"
 rustls = "0.23.12"
 tokio-rustls = "0.26.0"
+aws-lc-sys = { version = "0.20.1" }
 rustls-native-certs = "0.7.1"
 x509-parser = "0.16.0"
 serde = {version="1.0.204", features=["derive"]}
