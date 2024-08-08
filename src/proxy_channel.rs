@@ -15,7 +15,6 @@ pub struct ProxyChannel {
 }
 
 impl ProxyChannel {
-
     
     pub async fn create_proxy_channel(secure_link_server_socket_addr: SocketAddr,
                                       secure_link_server_domain: String,
