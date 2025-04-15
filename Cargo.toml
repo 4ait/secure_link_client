@@ -15,11 +15,14 @@ headers = "0.4"
 log = "0.4.22"
 env_logger = "0.11.4"
 dotenv = "0.15.0"
-rustls = "0.23.12"
-tokio-rustls = "0.26.0"
-aws-lc-sys = { version = "0.20.1" }
-x509-parser = "0.16.0"
+rustls = "0.23.26"
+tokio-rustls = "0.26.2"
+aws-lc-sys = { version = "0.28.0" }
+x509-parser = "0.17.0"
 serde = {version="1.0.204", features=["derive"]}
 serde_json = "1.0.122"
 anyhow = "1.0.86"
-webpki-roots = "0.26.3"
+webpki-roots = "0.26.8"
+rustls-native-certs = "0.8.1"
+reqwest = { version =  "0.12.15" }
+rustls-pemfile = "2.2.0"
