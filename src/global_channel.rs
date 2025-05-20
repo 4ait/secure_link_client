@@ -31,7 +31,8 @@ impl GlobalChannel {
                 secure_link_server_socket_addr,
                 secure_link_server_domain.clone()
             )
-            .await?;
+            .await
+            .unwrap();
         
         let global_channel_join_request = GlobalChannelJoinRequest::new(auth_token);
 
