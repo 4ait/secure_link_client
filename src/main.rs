@@ -10,7 +10,7 @@ use std::env;
 use std::net::{ToSocketAddrs};
 use std::sync::Arc;
 use dotenv::dotenv;
-use tokio_rustls::rustls::{ClientConfig};
+use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 use crate::global_channel::GlobalChannel;
 
 #[tokio::main]
@@ -28,35 +28,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("SECURE_LINK_SERVER_PORT environment variable not set")
         .parse()
         .expect("SECURE_LINK_SERVER_PORT must be a number");
+
+
+    let mut root_cert_store = RootCertStore::empty();
+    root_cert_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
     
+    #[cfg(feature = "load_dev_certs")]
+    {
+        // Load the development certificate
+        let dev_cert_path = "dev_certs/localhost.crt";
+        let dev_certs = dev_cert_loader::DevCertLoader::load_dev_cert(dev_cert_path).await?;
 
-    let config = {
-        
-        let config_builder = ClientConfig::builder();
-
-        #[cfg(feature = "load_dev_certs")]
-        {
-            let mut root_cert_store = tokio_rustls::rustls::RootCertStore::empty();
-
-            let dev_cert_path = "dev_certs/localhost.crt";
-            let dev_certs = dev_cert_loader::DevCertLoader::load_dev_cert(dev_cert_path).await?;
-
-            for dev_cert in dev_certs {
-                root_cert_store.add(dev_cert).unwrap();
-            }
-            // Use custom root store with dev certs when feature is enabled
-            config_builder.with_root_certificates(root_cert_store)
+        for dev_cert in dev_certs {
+            root_cert_store.add(dev_cert).unwrap();
         }
+    }
 
-        #[cfg(not(feature = "load_dev_certs"))]
-        {
-            use rustls_platform_verifier::BuilderVerifierExt;
-            config_builder.with_platform_verifier()
-        }
+    let config = ClientConfig::builder()
+        .with_root_certificates(root_cert_store)
+        .with_no_client_auth();
 
-    }.with_no_client_auth();
-    
-    
     let tls_config = Arc::new(config);
     
     let socket_addr =

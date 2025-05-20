@@ -8,18 +8,18 @@ load_dev_certs = []
 aws-lc-sys = ["aws-lc-sys/bindgen"]
 
 [dependencies]
-tokio = { version = "1.44.2", features = ["full"] }
+tokio = { version = "1.0", features = ["full"] }
 futures = "0.3"
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
 headers = "0.4"
 log = "0.4.22"
 env_logger = "0.11.4"
 dotenv = "0.15.0"
-rustls = "0.23.26"
-tokio-rustls = "0.26.2"
-rustls-platform-verifier = "0.5.1"
-aws-lc-sys = { version = "0.28.0" }
-x509-parser = "0.17.0"
+rustls = "0.23.12"
+tokio-rustls = "0.26.0"
+aws-lc-sys = { version = "0.20.1" }
+x509-parser = "0.16.0"
 serde = {version="1.0.204", features=["derive"]}
 serde_json = "1.0.122"
-anyhow = "1.0.89"
+anyhow = "1.0.86"
+webpki-roots = "0.26.3"
