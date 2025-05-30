@@ -79,7 +79,7 @@ impl GlobalChannel {
 
             }
             GlobalChannelJoinResponse::GlobalChannelJoinDenied(_) => {
-                Err(SecureLinkError::GlobalChannelJoinDeniedError)
+                Err(SecureLinkError::UnauthorizedError)
             }
         }
 

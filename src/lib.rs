@@ -16,7 +16,7 @@ pub enum SecureLinkError {
     #[error("GlobalChannelConnectError")] GlobalChannelConnectError,
     #[error("ProtocolSerializationError")] ProtocolSerializationError,
     #[error("TlsStreamError")] TlsStreamError,
-    #[error("GlobalChannelJoinDeniedError")] GlobalChannelJoinDeniedError,
+    #[error("UnauthorizedError")] UnauthorizedError,
     #[error("SecureLinkServerConnectionLost")] SecureLinkServerConnectionLost,
     #[error("ProxyChannelJoinDenied")] ProxyChannelJoinDenied
 }
