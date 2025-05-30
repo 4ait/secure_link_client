@@ -11,9 +11,9 @@ pub struct SecureLink {
 impl SecureLink {
     
     pub async fn connect_to_global_channel(
-        auth_token: &str,
         secure_link_server_host: &str, 
-        secure_link_server_port: u16
+        secure_link_server_port: u16,
+        auth_token: &str,
     ) -> Result<SecureLink, SecureLinkError> {
 
         let mut root_cert_store = RootCertStore::empty();
@@ -55,7 +55,7 @@ impl SecureLink {
         
     }
     
-    async fn run_message_loop(self) -> Result<(), SecureLinkError> {
+    pub async fn run_message_loop(self) -> Result<(), SecureLinkError> {
         self.global_channel.unwrap().run_message_loop().await?;
         Ok(())
     }
