@@ -33,7 +33,7 @@ impl ProxyChannel {
             .await
             .unwrap();
         
-        let proxy_channel_join_request = ProxyChannelJoinRequest::new(secure_link_session_id, proxy_channel_token);
+        let proxy_channel_join_request = ProxyChannelJoinRequest::new(proxy_channel_token);
 
         let request_json = 
             serde_json::to_string(&proxy_channel_join_request)

@@ -3,6 +3,10 @@ name = "secure_link_client"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "connect_to_dev_server"
+path = "src/bin/connect_to_dev_server.rs"
+
 [features]
 load_dev_certs = [ "include_dir" ]
 aws-lc-sys = ["aws-lc-sys/bindgen"]
