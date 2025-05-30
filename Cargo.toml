@@ -1,10 +1,10 @@
 [package]
-name = "secure_link"
+name = "secure_link_client"
 version = "0.1.0"
 edition = "2021"
 
 [features]
-load_dev_certs = []
+load_dev_certs = [ "include_dir" ]
 aws-lc-sys = ["aws-lc-sys/bindgen"]
 
 [dependencies]
@@ -24,3 +24,6 @@ serde_json = "1.0.122"
 anyhow = "1.0.86"
 webpki-roots = "1.0.0"
 windows-service = "0.8.0"
+
+include_dir = { version = "0.7.4", optional = true }
+thiserror = "2.0.12"

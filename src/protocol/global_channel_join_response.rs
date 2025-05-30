@@ -12,7 +12,7 @@ pub enum GlobalChannelJoinResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GlobalChannelJoinConfirmed { 
-    pub connection_id: String
+    pub secure_link_session_id: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]
