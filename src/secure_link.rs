@@ -20,7 +20,7 @@ impl SecureLink {
         root_cert_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
 
         #[cfg(feature = "load_dev_certs")]
-        dev_cert_loader::DevCertLoader::load_dev_certs(&mut root_cert_store).await.unwrap();
+        crate::dev_cert_loader::DevCertLoader::load_dev_certs(&mut root_cert_store).await.unwrap();
         
         let config = ClientConfig::builder()
             .with_root_certificates(root_cert_store)
