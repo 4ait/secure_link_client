@@ -3,7 +3,7 @@ use secure_link_client::SecureLink;
 
 fn main() {
 
-    let auth_token = "1:u26V5eWjsmJftipAZRlyY5W_BqLS8F-TeH13T6qK2hU";
+    let auth_token = "1:44qtO_YnOAu3JzgG-BmmPtWKibRGbSIi3E6P2iZ0wFs";
 
     let secure_link_server_host = "192.168.12.16";
     let secure_link_server_port: u16 = 6001;
@@ -17,7 +17,10 @@ fn main() {
                 &auth_token
             ).await.unwrap();
         
-        secure_link_connection_result.run_message_loop().await.unwrap();
+        let res = secure_link_connection_result.run_message_loop().await;
+        
+        
+        println!("{:?}", res);
 
 
     });

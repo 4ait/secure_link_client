@@ -29,6 +29,15 @@ pub enum CsGlobalChannelMessage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProxyChannelOpenResponse {
     pub proxy_channel_id: String,
-    pub result: String
+    pub result: ProxyChannelOpenResponseResult
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ProxyChannelOpenResponseResult {
+    #[serde(rename = "ok")]
+    Ok,
+    #[serde(rename = "bad_destination_address")]
+    BadDestinationAddress,
+    #[serde(rename = "could_not_reach_destination")]
+    CouldNotReachDestination
+}

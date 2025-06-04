@@ -38,7 +38,7 @@ impl CsGlobalChannelSenderInner {
 
         let message_json =
             serde_json::to_string(&message)
-                .map_err(|err| { SecureLinkError::ProtocolSerializationError })?;
+                .map_err(|_err| { SecureLinkError::ProtocolSerializationError })?;
 
         let pdu_length = (message_json.len() as u32).to_be_bytes();
 
@@ -51,7 +51,7 @@ impl CsGlobalChannelSenderInner {
         {
             let mut sender = self.sender.lock().await;
             sender.write_all(&global_channel_cs_pdu).await
-                .map_err(|err| { SecureLinkError::TlsStreamError })?;
+                .map_err(|_err| { SecureLinkError::TlsStreamError })?;
         } // MutexGuard is dropped here
 
         Ok(())

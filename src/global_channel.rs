@@ -1,7 +1,7 @@
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 use std::sync::Arc;
-use log::{info};
+use log::{error, info, warn};
 use rustls::ClientConfig;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, ReadHalf};
 use tokio::net::TcpStream;
@@ -9,7 +9,7 @@ use tokio_rustls::TlsStream;
 use crate::cs_global_chanel_sender::CsGlobalChannelSender;
 use crate::protocol::global_channel_join_request::GlobalChannelJoinRequest;
 use crate::protocol::global_channel_join_response::GlobalChannelJoinResponse;
-use crate::protocol::global_channel_message::{CsGlobalChannelMessage, ProxyChannelOpenResponse, ScGlobalChannelMessage};
+use crate::protocol::global_channel_message::{CsGlobalChannelMessage, ProxyChannelOpenResponse, ProxyChannelOpenResponseResult, ScGlobalChannelMessage};
 use crate::protocol::global_channel_message::ScGlobalChannelMessage::ProxyChannelOpenRequest;
 use crate::proxy_channel::ProxyChannel;
 use crate::SecureLinkError;
@@ -34,13 +34,13 @@ impl GlobalChannel {
                 secure_link_server_domain.clone()
             )
             .await
-            .map_err(|err| { SecureLinkError::GlobalChannelConnectError })?;
+            .map_err(|_err| { SecureLinkError::GlobalChannelConnectError })?;
         
         let global_channel_join_request = GlobalChannelJoinRequest::new(auth_token);
 
         let request_json =
             serde_json::to_string(&global_channel_join_request)
-                .map_err(|err| { SecureLinkError::ProtocolSerializationError })?;
+                .map_err(|_err| { SecureLinkError::ProtocolSerializationError })?;
 
         let pdu_length = (request_json.len() as u32).to_be_bytes();
 
@@ -50,18 +50,18 @@ impl GlobalChannel {
         global_channel_join_request_pdu.extend_from_slice(request_json.as_bytes());
 
         tls_stream.write(&global_channel_join_request_pdu).await
-            .map_err(|err| { SecureLinkError::TlsStreamError })?;
+            .map_err(|_err| { SecureLinkError::TlsStreamError })?;
 
-        let _reserved = tls_stream.read_u8().await.map_err(|err| { SecureLinkError::TlsStreamError })?;
-        let length = tls_stream.read_u32().await .map_err(|err| { SecureLinkError::TlsStreamError })?;
+        let _reserved = tls_stream.read_u8().await.map_err(|_err| { SecureLinkError::TlsStreamError })?;
+        let length = tls_stream.read_u32().await .map_err(|_err| { SecureLinkError::TlsStreamError })?;
 
         let mut message = vec![0; length as usize];
 
-        tls_stream.read_exact(&mut message).await.map_err(|err| { SecureLinkError::TlsStreamError })?;
+        tls_stream.read_exact(&mut message).await.map_err(|_err| { SecureLinkError::TlsStreamError })?;
 
         let channel_join_response =
             serde_json::from_slice::<GlobalChannelJoinResponse>(&message)
-            .map_err(|err| { SecureLinkError::ProtocolSerializationError })?;
+            .map_err(|_err| { SecureLinkError::ProtocolSerializationError })?;
 
         match channel_join_response {
             GlobalChannelJoinResponse::GlobalChannelJoinConfirmed(global_channel_join_confirmed) => {
@@ -145,7 +145,7 @@ impl GlobalChannel {
             secure_link_server_socket_addr: &SocketAddr,
             secure_link_server_domain: &str,
             tls_config: Arc<ClientConfig>,
-            secure_link_session_id: &str,
+            _secure_link_session_id: &str,
             global_channel_sender: &CsGlobalChannelSender,
             unrecoverable_error_in_channels_sender: &tokio::sync::mpsc::Sender<SecureLinkError>
         ) -> Result<(), SecureLinkError> {
@@ -170,7 +170,6 @@ impl GlobalChannel {
                             let tls_config = tls_config.clone();
                             let global_channel_sender = global_channel_sender.clone();
                             let unrecoverable_error_in_channels_sender = unrecoverable_error_in_channels_sender.clone();
-                            let secure_link_session_id = secure_link_session_id.to_string();
                             let secure_link_server_domain = secure_link_server_domain.to_string();
 
                             tokio::spawn(async move {
@@ -185,11 +184,11 @@ impl GlobalChannel {
                                                 secure_link_server_domain,
                                                 tls_config,
                                                 dst_tcp_stream,
-                                                secure_link_session_id,
                                                 proxy_channel_open_request.channel_token
                                             ).await;
 
                                         match proxy_channel_create_result {
+                                            
                                             Ok(proxy_channel) => {
 
                                                 proxy_channel.run_proxy_between_sender_and_secure_link_server().await;
@@ -202,6 +201,8 @@ impl GlobalChannel {
                                                 let _result = unrecoverable_error_in_channels_sender.send(
                                                     SecureLinkError::SecureLinkServerConnectionLost
                                                 ).await;
+                                                
+                                                error!("SecureLinkServerConnectionLost in proxy channel: {}", err);
                                             }
                                         };
 
@@ -212,12 +213,12 @@ impl GlobalChannel {
                                             CsGlobalChannelMessage::ProxyChannelOpenResponse(
                                                 ProxyChannelOpenResponse {
                                                     proxy_channel_id,
-                                                    result: "failed to connect to dst".to_string()
+                                                    result: ProxyChannelOpenResponseResult::CouldNotReachDestination
                                                 }
                                             )
                                         ).await;
 
-                                        info!("failed to connect to requested dst")
+                                        warn!("failed to connect to requested dst {:?}", err)
 
                                     }
                                 }
@@ -227,16 +228,18 @@ impl GlobalChannel {
                         }
 
                         //bad destination address
-                        Err(_) => {
+                        Err(err) => {
 
                             let _result = global_channel_sender.send_cs_global_channel_message(
                                 CsGlobalChannelMessage::ProxyChannelOpenResponse(
                                     ProxyChannelOpenResponse {
                                         proxy_channel_id,
-                                        result: "bad dst address".to_string()
+                                        result: ProxyChannelOpenResponseResult::BadDestinationAddress
                                     }
                                 )
                             ).await;
+
+                            warn!("failed parse dst address {:?}", err)
 
                         }
                     }
@@ -250,17 +253,17 @@ impl GlobalChannel {
 
         async fn receive_next_sc_global_channel_message(tls_stream_reader: &mut ReadHalf<TlsStream<TcpStream>>) -> Result<ScGlobalChannelMessage, SecureLinkError>{
 
-            let _reserved = tls_stream_reader.read_u8().await.map_err(|err| { SecureLinkError::TlsStreamError })?;
-            let length = tls_stream_reader.read_u32().await.map_err(|err| { SecureLinkError::TlsStreamError })?;
+            let _reserved = tls_stream_reader.read_u8().await.map_err(|_err| { SecureLinkError::TlsStreamError })?;
+            let length = tls_stream_reader.read_u32().await.map_err(|_err| { SecureLinkError::TlsStreamError })?;
 
             let mut global_channel_message_bytes = vec![0; length as usize];
 
             tls_stream_reader.read_exact(&mut global_channel_message_bytes).await
-                .map_err(|err| { SecureLinkError::TlsStreamError })?;
+                .map_err(|_err| { SecureLinkError::TlsStreamError })?;
             
             let global_channel_message =
                 serde_json::from_slice::<ScGlobalChannelMessage>(&global_channel_message_bytes)
-                    .map_err(|err| { SecureLinkError::ProtocolSerializationError })?;
+                    .map_err(|_err| { SecureLinkError::ProtocolSerializationError })?;
 
             Ok(global_channel_message)
 
