@@ -40,7 +40,7 @@ impl GlobalChannel {
 
         let request_json =
             serde_json::to_string(&global_channel_join_request)
-                .map_err(|_err| { SecureLinkError::ProtocolSerializationError })?;
+                .map_err(|err| { SecureLinkError::ProtocolSerializationError(Box::new(err)) })?;
 
         let pdu_length = (request_json.len() as u32).to_be_bytes();
 
@@ -50,18 +50,18 @@ impl GlobalChannel {
         global_channel_join_request_pdu.extend_from_slice(request_json.as_bytes());
 
         tls_stream.write(&global_channel_join_request_pdu).await
-            .map_err(|_err| { SecureLinkError::TlsStreamError })?;
+            .map_err(|err| { SecureLinkError::TlsStreamError(Box::new(err)) })?;
 
-        let _reserved = tls_stream.read_u8().await.map_err(|_err| { SecureLinkError::TlsStreamError })?;
-        let length = tls_stream.read_u32().await .map_err(|_err| { SecureLinkError::TlsStreamError })?;
+        let _reserved = tls_stream.read_u8().await.map_err(|err| { SecureLinkError::TlsStreamError(Box::new(err)) })?;
+        let length = tls_stream.read_u32().await.map_err(|err| { SecureLinkError::TlsStreamError(Box::new(err)) })?;
 
         let mut message = vec![0; length as usize];
 
-        tls_stream.read_exact(&mut message).await.map_err(|_err| { SecureLinkError::TlsStreamError })?;
+        tls_stream.read_exact(&mut message).await.map_err(|err| { SecureLinkError::TlsStreamError(Box::new(err)) })?;
 
         let channel_join_response =
             serde_json::from_slice::<GlobalChannelJoinResponse>(&message)
-            .map_err(|_err| { SecureLinkError::ProtocolSerializationError })?;
+                .map_err(|err| { SecureLinkError::ProtocolSerializationError(Box::new(err)) })?;
 
         match channel_join_response {
             GlobalChannelJoinResponse::GlobalChannelJoinConfirmed(global_channel_join_confirmed) => {
@@ -106,8 +106,7 @@ impl GlobalChannel {
                 receive_next_sc_global_channel_message(
                     &mut tls_stream_reader
                 ).await?;
-
-            info!("Global channel message received: #{:#?}", global_channel_message);
+            
 
             let handle_sc_global_channel_message_future = handle_sc_global_channel_message(
                 global_channel_message,
@@ -191,18 +190,28 @@ impl GlobalChannel {
                                             
                                             Ok(proxy_channel) => {
 
-                                                proxy_channel.run_proxy_between_sender_and_secure_link_server().await;
-
-                                                info!("proxy channel down")
+                                                let proxy_channel_run_result = 
+                                                    proxy_channel.run_proxy_between_sender_and_secure_link_server().await;
+                                                
+                                                match proxy_channel_run_result {
+                                                    Ok(()) => {
+                                                        info!("proxy channel down");
+                                                    }
+                                                    Err(err) => {
+                                                        warn!("proxy channel down with error: {}", err);
+                                                    }
+                                                }
+                                               
 
                                             }
                                             Err(err) => {
 
+                                                error!("SecureLinkServerConnectionLost in proxy channel: {}", err);
+                                                
                                                 let _result = unrecoverable_error_in_channels_sender.send(
-                                                    SecureLinkError::SecureLinkServerConnectionLost
+                                                    SecureLinkError::SecureLinkServerConnectionLost(Box::new(err))
                                                 ).await;
                                                 
-                                                error!("SecureLinkServerConnectionLost in proxy channel: {}", err);
                                             }
                                         };
 
@@ -253,17 +262,17 @@ impl GlobalChannel {
 
         async fn receive_next_sc_global_channel_message(tls_stream_reader: &mut ReadHalf<TlsStream<TcpStream>>) -> Result<ScGlobalChannelMessage, SecureLinkError>{
 
-            let _reserved = tls_stream_reader.read_u8().await.map_err(|_err| { SecureLinkError::TlsStreamError })?;
-            let length = tls_stream_reader.read_u32().await.map_err(|_err| { SecureLinkError::TlsStreamError })?;
+            let _reserved = tls_stream_reader.read_u8().await.map_err(|err| { SecureLinkError::TlsStreamError(Box::new(err)) })?;
+            let length = tls_stream_reader.read_u32().await.map_err(|err| { SecureLinkError::TlsStreamError(Box::new(err)) })?;
 
             let mut global_channel_message_bytes = vec![0; length as usize];
 
             tls_stream_reader.read_exact(&mut global_channel_message_bytes).await
-                .map_err(|_err| { SecureLinkError::TlsStreamError })?;
+                .map_err(|err| { SecureLinkError::TlsStreamError(Box::new(err)) })?;
             
             let global_channel_message =
                 serde_json::from_slice::<ScGlobalChannelMessage>(&global_channel_message_bytes)
-                    .map_err(|_err| { SecureLinkError::ProtocolSerializationError })?;
+                    .map_err(|err| { SecureLinkError::ProtocolSerializationError(Box::new(err)) })?;
 
             Ok(global_channel_message)
 

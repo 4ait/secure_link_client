@@ -14,10 +14,10 @@ pub enum SecureLinkError {
     #[error("DevCertificatesLoadingError")] DevCertificatesLoadingError,
     #[error("BadHostError")] BadHostError,
     #[error("GlobalChannelConnectError")] GlobalChannelConnectError,
-    #[error("ProtocolSerializationError")] ProtocolSerializationError,
-    #[error("TlsStreamError")] TlsStreamError,
+    #[error("ProtocolSerializationError")] ProtocolSerializationError(Box<dyn std::error::Error + Send>),
+    #[error("TlsStreamError")] TlsStreamError(Box<dyn std::error::Error + Send>),
     #[error("UnauthorizedError")] UnauthorizedError,
-    #[error("SecureLinkServerConnectionLost")] SecureLinkServerConnectionLost,
+    #[error("SecureLinkServerConnectionLost")] SecureLinkServerConnectionLost(Box<SecureLinkError>),
     #[error("ProxyChannelJoinDenied")] ProxyChannelJoinDenied
 }
 

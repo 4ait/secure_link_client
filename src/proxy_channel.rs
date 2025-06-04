@@ -36,7 +36,7 @@ impl ProxyChannel {
 
         let request_json = 
             serde_json::to_string(&proxy_channel_join_request)
-                .map_err(|_err| { SecureLinkError::ProtocolSerializationError })?;
+                .map_err(|err| { SecureLinkError::ProtocolSerializationError(Box::new(err)) })?;
 
         let pdu_length = (request_json.len() as u32).to_be_bytes();
 
@@ -47,26 +47,26 @@ impl ProxyChannel {
 
         tls_stream.write(&proxy_channel_join_request_pdu)
             .await
-            .map_err(|_err| { SecureLinkError::TlsStreamError })?;
+            .map_err(|err| { SecureLinkError::TlsStreamError(Box::new(err)) })?;
 
         let _reserved = tls_stream.read_u8()
             .await
-            .map_err(|_err| { SecureLinkError::TlsStreamError })?;
+            .map_err(|err| { SecureLinkError::TlsStreamError(Box::new(err)) })?;
         
         let length = 
             tls_stream.read_u32()
                 .await
-                .map_err(|_err| { SecureLinkError::TlsStreamError })?;
+                .map_err(|err| { SecureLinkError::TlsStreamError(Box::new(err)) })?;
 
         let mut message = vec![0; length as usize];
 
         tls_stream.read_exact(&mut message).
             await
-            .map_err(|_err| { SecureLinkError::TlsStreamError })?;
+            .map_err(|err| { SecureLinkError::TlsStreamError(Box::new(err)) })?;
 
         let channel_join_response = 
             serde_json::from_slice::<ProxyChannelJoinResponse>(&message)
-                .map_err(|_err| { SecureLinkError::ProtocolSerializationError })?;
+                .map_err(|err| { SecureLinkError::ProtocolSerializationError(Box::new(err)) })?;
         
         match channel_join_response {
             ProxyChannelJoinResponse::ProxyChannelJoinConfirmed(_) => {
@@ -89,7 +89,7 @@ impl ProxyChannel {
 
     }
     
-    pub async fn run_proxy_between_sender_and_secure_link_server(self) {
+    pub async fn run_proxy_between_sender_and_secure_link_server(self) -> Result<(), SecureLinkError> {
 
         let sender_tcp_stream = self.sender_tcp_stream;
         let recipient_tls_stream = self.recipient_tls_stream;
@@ -101,21 +101,30 @@ impl ProxyChannel {
         let (mut sender_tcp_read, mut sender_tcp_write) = tokio::io::split(sender_tcp_stream);
 
         // Copy sender -> recipient
+        // Copy sender -> recipient
         let sender_to_recipient = async {
-            tokio::io::copy(&mut sender_tcp_read, &mut recipient_tls_write).await?;
-            recipient_tls_write.shutdown().await?;
-            Ok::<_, anyhow::Error>(())
+            
+            let result = tokio::io::copy(&mut sender_tcp_read, &mut recipient_tls_write).await
+                .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send>);
+            
+            let _ = recipient_tls_write.shutdown().await; // Ignore shutdown errors
+            
+            result.map(|_| ())
         };
 
-        // Copy recipient -> sender
+        // Copy recipient -> sender  
         let recipient_to_sender = async {
-            tokio::io::copy(&mut recipient_tls_read, &mut sender_tcp_write).await?;
-            sender_tcp_write.shutdown().await?;
-            Ok::<_, anyhow::Error>(())
+            let result = tokio::io::copy(&mut recipient_tls_read, &mut sender_tcp_write).await
+                .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send>);
+            let _ = sender_tcp_write.shutdown().await; // Ignore shutdown errors
+            result.map(|_| ())
         };
 
         // Run both tasks concurrently
-        let _result = tokio::try_join!(sender_to_recipient, recipient_to_sender);
+        tokio::try_join!(sender_to_recipient, recipient_to_sender)
+            .map_err(|err| { SecureLinkError::TlsStreamError(err) })?;
+        
+        Ok(())
         
     }
     

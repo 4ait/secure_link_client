@@ -3,6 +3,8 @@ use secure_link_client::SecureLink;
 
 fn main() {
 
+    env_logger::init();
+    
     let auth_token = "1:44qtO_YnOAu3JzgG-BmmPtWKibRGbSIi3E6P2iZ0wFs";
 
     let secure_link_server_host = "192.168.12.16";
