@@ -5,6 +5,8 @@ use secure_link_client::SecureLink;
 fn main() {
 
     env_logger::init();
+    
+    dotenv::dotenv().ok();
 
     let auth_token = env::var("AUTH_TOKEN")
         .expect("AUTH_TOKEN environment variable is required");

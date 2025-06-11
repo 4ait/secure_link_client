@@ -13,7 +13,7 @@ pub enum SecureLinkError {
 
     #[error("DevCertificatesLoadingError")] DevCertificatesLoadingError,
     #[error("BadHostError")] BadHostError,
-    #[error("GlobalChannelConnectError")] GlobalChannelConnectError,
+    #[error("GlobalChannelConnectError")] GlobalChannelConnectError(Box<dyn std::error::Error + Send>),
     #[error("ProtocolSerializationError")] ProtocolSerializationError(Box<dyn std::error::Error + Send>),
     #[error("TlsStreamError")] TlsStreamError(Box<dyn std::error::Error + Send>),
     #[error("UnauthorizedError")] UnauthorizedError,

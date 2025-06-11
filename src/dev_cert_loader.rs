@@ -1,4 +1,3 @@
-use std::fs;
 use include_dir::{include_dir, Dir};
 use rustls::pki_types::CertificateDer;
 use rustls::RootCertStore;

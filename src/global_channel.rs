@@ -34,7 +34,7 @@ impl GlobalChannel {
                 secure_link_server_domain.clone()
             )
             .await
-            .map_err(|_err| { SecureLinkError::GlobalChannelConnectError })?;
+            .map_err(|err| { SecureLinkError::GlobalChannelConnectError(err.into()) })?;
         
         let global_channel_join_request = GlobalChannelJoinRequest::new(auth_token);
 
