@@ -1,11 +1,11 @@
 [package]
 name = "secure_link_client"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 [[bin]]
-name = "connect_to_dev_server"
-path = "src/bin/connect_to_dev_server.rs"
+name = "dev_client"
+path = "src/bin/dev_client.rs"
 
 [features]
 load_dev_certs = [ "include_dir" ]
