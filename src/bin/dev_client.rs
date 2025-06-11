@@ -10,12 +10,12 @@ fn main() {
         .expect("AUTH_TOKEN environment variable is required");
 
     let secure_link_server_host = env::var("SECURE_LINK_SERVER_HOST")
-        .expect("SECURE_LINK_HOST environment variable is required");
+        .expect("SECURE_LINK_SERVER_HOST environment variable is required");
 
     let secure_link_server_port: u16 = env::var("SECURE_LINK_SERVER_PORT")
-        .expect("SECURE_LINK_PORT environment variable is required")
+        .expect("SECURE_LINK_SERVER_PORT environment variable is required")
         .parse()
-        .expect("SECURE_LINK_PORT must be a valid port number");
+        .expect("SECURE_LINK_SERVER_PORT must be a valid port number");
 
     Runtime::new().unwrap().block_on(async {
 
