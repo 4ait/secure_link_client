@@ -149,109 +149,85 @@ impl GlobalChannel {
             unrecoverable_error_in_channels_sender: &tokio::sync::mpsc::Sender<SecureLinkError>
         ) -> Result<(), SecureLinkError> {
 
-            match global_channel_message  {
+            match global_channel_message {
 
                 ProxyChannelOpenRequest(proxy_channel_open_request) => {
 
                     let proxy_channel_id = proxy_channel_open_request.proxy_channel_id;
                     let destination = proxy_channel_open_request.destination;
 
-                    match IpAddr::from_str(&destination.ip) {
-                        Ok(dst_ip_address) => {
+                    // Create destination address string that can handle both IP and DNS
+                    let destination_addr = format!("{}:{}", destination.ip, destination.port);
 
-                            let destination_socket_addr =
-                                SocketAddr::new(
-                                    dst_ip_address,
-                                    destination.port
-                                );
+                    let secure_link_server_socket_addr = secure_link_server_socket_addr.clone();
+                    let tls_config = tls_config.clone();
+                    let global_channel_sender = global_channel_sender.clone();
+                    let unrecoverable_error_in_channels_sender = unrecoverable_error_in_channels_sender.clone();
+                    let secure_link_server_domain = secure_link_server_domain.to_string();
 
-                            let secure_link_server_socket_addr = secure_link_server_socket_addr.clone();
-                            let tls_config = tls_config.clone();
-                            let global_channel_sender = global_channel_sender.clone();
-                            let unrecoverable_error_in_channels_sender = unrecoverable_error_in_channels_sender.clone();
-                            let secure_link_server_domain = secure_link_server_domain.to_string();
+                    tokio::spawn(async move {
 
-                            tokio::spawn(async move {
+                        // TcpStream::connect can handle both IP addresses and DNS names
+                        match TcpStream::connect(&destination_addr).await {
 
-                                match TcpStream::connect(&destination_socket_addr).await {
+                            Ok(dst_tcp_stream) => {
 
-                                    Ok(dst_tcp_stream) => {
+                                let proxy_channel_create_result =
+                                    ProxyChannel::create_proxy_channel_with_secure_link_server(
+                                        secure_link_server_socket_addr,
+                                        secure_link_server_domain,
+                                        tls_config,
+                                        dst_tcp_stream,
+                                        proxy_channel_open_request.channel_token
+                                    ).await;
 
-                                        let proxy_channel_create_result =
-                                            ProxyChannel::create_proxy_channel_with_secure_link_server(
-                                                secure_link_server_socket_addr,
-                                                secure_link_server_domain,
-                                                tls_config,
-                                                dst_tcp_stream,
-                                                proxy_channel_open_request.channel_token
-                                            ).await;
+                                match proxy_channel_create_result {
 
-                                        match proxy_channel_create_result {
-                                            
-                                            Ok(proxy_channel) => {
+                                    Ok(proxy_channel) => {
 
-                                                let proxy_channel_run_result = 
-                                                    proxy_channel.run_proxy_between_sender_and_secure_link_server().await;
-                                                
-                                                match proxy_channel_run_result {
-                                                    Ok(()) => {
-                                                        info!("proxy channel down");
-                                                    }
-                                                    Err(err) => {
-                                                        warn!("proxy channel down with error: {}", err);
-                                                    }
-                                                }
-                                               
+                                        let proxy_channel_run_result =
+                                            proxy_channel.run_proxy_between_sender_and_secure_link_server().await;
 
+                                        match proxy_channel_run_result {
+                                            Ok(()) => {
+                                                info!("proxy channel down");
                                             }
                                             Err(err) => {
-
-                                                error!("SecureLinkServerConnectionLost in proxy channel: {}", err);
-                                                
-                                                let _result = unrecoverable_error_in_channels_sender.send(
-                                                    SecureLinkError::SecureLinkServerConnectionLost(Box::new(err))
-                                                ).await;
-                                                
+                                                warn!("proxy channel down with error: {}", err);
                                             }
-                                        };
+                                        }
+
 
                                     }
                                     Err(err) => {
 
-                                        let _result = global_channel_sender.send_cs_global_channel_message(
-                                            CsGlobalChannelMessage::ProxyChannelOpenResponse(
-                                                ProxyChannelOpenResponse {
-                                                    proxy_channel_id,
-                                                    result: ProxyChannelOpenResponseResult::CouldNotReachDestination
-                                                }
-                                            )
+                                        error!("SecureLinkServerConnectionLost in proxy channel: {}", err);
+
+                                        let _result = unrecoverable_error_in_channels_sender.send(
+                                            SecureLinkError::SecureLinkServerConnectionLost(Box::new(err))
                                         ).await;
 
-                                        warn!("failed to connect to requested dst {:?}", err)
-
                                     }
-                                }
+                                };
 
-                            });
+                            }
+                            Err(err) => {
 
+                                let _result = global_channel_sender.send_cs_global_channel_message(
+                                    CsGlobalChannelMessage::ProxyChannelOpenResponse(
+                                        ProxyChannelOpenResponse {
+                                            proxy_channel_id,
+                                            result: ProxyChannelOpenResponseResult::CouldNotReachDestination
+                                        }
+                                    )
+                                ).await;
+
+                                warn!("failed to connect to requested dst {:?}", err)
+
+                            }
                         }
 
-                        //bad destination address
-                        Err(err) => {
-
-                            let _result = global_channel_sender.send_cs_global_channel_message(
-                                CsGlobalChannelMessage::ProxyChannelOpenResponse(
-                                    ProxyChannelOpenResponse {
-                                        proxy_channel_id,
-                                        result: ProxyChannelOpenResponseResult::BadDestinationAddress
-                                    }
-                                )
-                            ).await;
-
-                            warn!("failed parse dst address {:?}", err)
-
-                        }
-                    }
+                    });
 
                 }
             }
