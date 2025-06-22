@@ -10,6 +10,8 @@ pub struct DevCertLoader;
 
 static DEV_CERTS_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/dev_certs");
 
+static CERT_ENV : &str = "SECURE_LINK_CLIENT_DEV_PEM_CERTIFICATE";
+
 impl DevCertLoader {
 
     pub async fn load_dev_certs(root_cert_store: &mut RootCertStore) -> Result<(), anyhow::Error> {
@@ -27,11 +29,16 @@ impl DevCertLoader {
             
         }
         
+        if let Ok(dev_cert_env_value) = std::env::var(CERT_ENV) {
+            Self::load_dev_cert(dev_cert_env_value.as_bytes()).await?;
+        }
+        
         Ok(())
 
     }
     
     pub async fn load_dev_cert_file(cert_path: &str, root_cert_store: &mut RootCertStore) -> Result<(), anyhow::Error> {
+        
         let mut cert_file = File::open(cert_path).await?;
         let mut data = Vec::new();
         cert_file.read_to_end(&mut data).await?;
@@ -47,7 +54,7 @@ impl DevCertLoader {
         Ok(())
         
     }
-
+    
     async fn load_dev_cert(data: &[u8]) -> Result<Vec<CertificateDer>, anyhow::Error> {
         
 
