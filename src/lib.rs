@@ -17,7 +17,7 @@ pub enum SecureLinkError {
     #[error("ProtocolSerializationError")] ProtocolSerializationError(Box<dyn std::error::Error + Send>),
     #[error("TlsStreamError")] TlsStreamError(Box<dyn std::error::Error + Send>),
     #[error("UnauthorizedError")] UnauthorizedError,
-    #[error("SecureLinkServerConnectionLost")] SecureLinkServerConnectionLost(Box<SecureLinkError>),
+    #[error("SecureLinkServerConnectionLost")] SecureLinkServerConnectionLost(Box<dyn std::error::Error + Send>),
     #[error("ProxyChannelJoinDenied")] ProxyChannelJoinDenied
 }
 

@@ -4,9 +4,12 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "type")]
 pub enum ScGlobalChannelMessage {
     #[serde(rename = "proxy_channel_open_request")]
-    ProxyChannelOpenRequest(ProxyChannelOpenRequest)
+    ProxyChannelOpenRequest(ProxyChannelOpenRequest),
+    #[serde(rename = "health_check_request")]
+    HealthCheckRequest,
+    #[serde(rename = "health_check_response")]
+    HealthCheckResponse
 }
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProxyChannelOpenRequest {
     pub proxy_channel_id: String,
@@ -23,7 +26,11 @@ pub struct ProxyDestination {
 #[serde(tag = "type")]
 pub enum CsGlobalChannelMessage {
     #[serde(rename = "proxy_channel_open_response")]
-    ProxyChannelOpenResponse(ProxyChannelOpenResponse)
+    ProxyChannelOpenResponse(ProxyChannelOpenResponse),
+    #[serde(rename = "health_check_request")]
+    HealthCheckRequest,
+    #[serde(rename = "health_check_response")]
+    HealthCheckResponse
 }
 
 #[derive(Debug, Serialize, Deserialize)]
