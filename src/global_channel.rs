@@ -1,7 +1,7 @@
 use std::net::{SocketAddr};
 use std::sync::{Arc, Mutex};
 use anyhow::anyhow;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use rustls::ClientConfig;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, ReadHalf};
 use tokio::net::TcpStream;
@@ -180,7 +180,7 @@ impl GlobalChannel {
             loop {
                 interval.tick().await;
 
-                info!("Sending health check request");
+                debug!("Sending health check request");
 
                 // Create a channel for this specific health check
                 let (response_sender, mut response_receiver) = tokio::sync::mpsc::channel::<()>(1);
@@ -211,7 +211,7 @@ impl GlobalChannel {
                 // Wait for response with timeout
                 match timeout(Duration::from_secs(HEALTH_CHECK_TIMEOUT_SECS), response_receiver.recv()).await {
                     Ok(Some(())) => {
-                        info!("Health check response received");
+                        debug!("Health check response received");
                         // Clean up the channel
                         {
                             let mut guard = running_health_check_channel.lock().unwrap();
