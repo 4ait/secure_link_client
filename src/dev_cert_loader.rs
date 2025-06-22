@@ -10,7 +10,7 @@ pub struct DevCertLoader;
 
 static DEV_CERTS_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/dev_certs");
 
-static CERT_ENV : &str = "SECURE_LINK_CLIENT_DEV_PEM_CERTIFICATE";
+static CERT_ENV : &str = "SECURE_LINK_CLIENT_DEV_CERT_PEM_CONTENT";
 
 impl DevCertLoader {
 
