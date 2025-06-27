@@ -30,7 +30,15 @@ impl DevCertLoader {
         }
         
         if let Ok(dev_cert_env_value) = std::env::var(CERT_ENV) {
-            Self::load_dev_cert(dev_cert_env_value.as_bytes()).await?;
+
+            let certs_from_env = Self::load_dev_cert(dev_cert_env_value.as_bytes()).await?;
+
+            for cert in certs_from_env {
+                if let Err(e) = root_cert_store.add(cert) {
+                    log::warn!("Failed to add dev certificate: {}", e);
+                }
+            }
+
         }
         
         Ok(())
