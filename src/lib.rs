@@ -25,3 +25,5 @@ pub use secure_link::SecureLink;
 
 static_assertions::assert_impl_all!(SecureLink: Send, Sync);
 static_assertions::assert_impl_all!(SecureLinkError: Send);
+
+

@@ -269,7 +269,11 @@ impl GlobalChannel {
 
                 ScGlobalChannelMessage::HealthCheckResponse => {
                     
-                    if let Some(running_health_check_channel) = running_health_check_channel.lock().unwrap().take() {
+                    let channel = {
+                        running_health_check_channel.lock().unwrap().take()
+                    };
+                    
+                    if let Some(running_health_check_channel) = channel {
                         
                         if let Err(err) = running_health_check_channel.send(()).await {
                             warn!("failed to process health check result: {}", err);
