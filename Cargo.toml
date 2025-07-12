@@ -31,3 +31,4 @@ windows-service = "0.8.0"
 
 include_dir = { version = "0.7.4", optional = true }
 thiserror = "2.0.12"
+static_assertions = "1.1.0"
